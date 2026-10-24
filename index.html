@@ -128,7 +128,10 @@ const log = m => { logEl.textContent = (m + "\n" + logEl.textContent).slice(0, 4
     await withTimeout((async () => ffmpeg.load({
       coreURL: await toBlobURL(`${BASE}/ffmpeg-core.js`, "text/javascript"),
       wasmURL: await toBlobURL(`${BASE}/ffmpeg-core.wasm`, "application/wasm"),
-    }))(), 90000, "Encoder download");
+      // A Worker cannot be constructed from a cross-origin URL, so the worker
+      // script is fetched and handed over as a same-origin blob URL too.
+      classWorkerURL: await toBlobURL("https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/worker.js", "text/javascript"),
+    }))(), 120000, "Encoder download");
     ready = true;
     log("Encoder ready.");
     $("#go").textContent = file ? "Apply branding" : "Choose a video first";
