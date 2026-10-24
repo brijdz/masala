@@ -1,0 +1,14 @@
+{
+  "name": "mm-brand",
+  "version": "1.0.0",
+  "description": "Apply Maidan & Masala branding to videos for Facebook Reels",
+  "type": "module",
+  "bin": { "mm-brand": "./brand.js" },
+  "scripts": {
+    "brand": "node brand.js",
+    "overlay": "node make-overlay.js",
+    "serve": "node server.js"
+  },
+  "engines": { "node": ">=18" },
+  "dependencies": {}
+}
