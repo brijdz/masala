@@ -1,7 +1,0 @@
-Host github-brijdz
-    HostName github.com
-    User git
-    IdentityFile ~/.ssh/id_ed25519_brijdz
-    IdentitiesOnly yes
-    AddKeysToAgent yes
-    UseKeychain yes

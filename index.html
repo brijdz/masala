@@ -104,10 +104,18 @@
 </main>
 
 <script type="module">
-import { FFmpeg } from "https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js";
-import { fetchFile, toBlobURL } from "https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js";
+import { FFmpeg } from "./vendor/ffmpeg/index.js";
+import { fetchFile } from "./vendor/util/index.js";
 
-const BASE = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm";
+// Self-hosted, same-origin. No CDN, no blob URLs.
+// worker.js uses relative imports (./const.js, ./errors.js) which only resolve
+// when it is served from a real path on this origin -- a blob: URL breaks them
+// and ffmpeg.load() then hangs forever without throwing.
+// Absolute URLs are required: these are resolved INSIDE the worker
+// (/vendor/ffmpeg/worker.js), so a relative path would resolve against the
+// worker's own directory and 404.
+const CORE = new URL("./vendor/core/ffmpeg-core.js",  location.href).href;
+const WASM = new URL("./vendor/core/ffmpeg-core.wasm", location.href).href;
 const $ = s => document.querySelector(s);
 const logEl = $("#log"), bar = $("#bar"), barFill = bar.querySelector("i");
 let file = null, ffmpeg = null, ready = false;
@@ -125,19 +133,13 @@ const log = m => { logEl.textContent = (m + "\n" + logEl.textContent).slice(0, 4
     const withTimeout = (p, ms, what) => Promise.race([
       p, new Promise((_, rej) => setTimeout(() => rej(new Error(what + " timed out")), ms))
     ]);
-    await withTimeout((async () => ffmpeg.load({
-      coreURL: await toBlobURL(`${BASE}/ffmpeg-core.js`, "text/javascript"),
-      wasmURL: await toBlobURL(`${BASE}/ffmpeg-core.wasm`, "application/wasm"),
-      // A Worker cannot be constructed from a cross-origin URL, so the worker
-      // script is fetched and handed over as a same-origin blob URL too.
-      classWorkerURL: await toBlobURL("https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/worker.js", "text/javascript"),
-    }))(), 120000, "Encoder download");
+    await withTimeout(ffmpeg.load({ coreURL: CORE, wasmURL: WASM }), 180000, "Encoder load");
     ready = true;
     log("Encoder ready.");
     $("#go").textContent = file ? "Apply branding" : "Choose a video first";
     $("#go").disabled = !file;
   } catch (e) {
-    log("Could not load the encoder: " + e.message + "\nCheck your connection and reload. The encoder is ~30 MB on first visit, then cached.");
+    log("Could not load the encoder: " + (e && (e.message || e.type || String(e)) || "unknown") + "\nThe encoder is ~31 MB on first visit, then cached. Reload if this persists.");
     $("#go").textContent = "Encoder failed to load";
   }
 })();
