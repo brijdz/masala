@@ -79,8 +79,8 @@
       <span><b>Fit to 1080×1920</b><small>Pads to vertical with the brand background. Leave on unless the source is already 9:16.</small></span>
     </label>
     <label class="row">
-      <input type="checkbox" id="optMute" checked>
-      <span><b>Strip the audio track</b><small>Facebook's music picker only applies cleanly to a video with no audio stream. Turn this off once you have narration.</small></span>
+      <input type="checkbox" id="optMute">
+      <span><b>Strip the audio track</b><small>Leave this OFF to keep your narration. Only tick it if the video is silent and you want to add music in Facebook's composer.</small></span>
     </label>
   </div>
 
@@ -186,7 +186,11 @@ $("#go").addEventListener("click", async () => {
     ];
     if ($("#optMute").checked) args.push("-an");
     else args.push("-map", "0:a?", "-c:a", "aac", "-b:a", "128k");
-    args.push("-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+    // ultrafast compresses badly -- it produced 500MB+ files from long sources.
+    // veryfast with a bitrate ceiling keeps encode speed but caps the size:
+    // ~6 Mbit/s at 1080x1920 is well beyond what Facebook keeps after its own re-encode.
+    args.push("-c:v", "libx264", "-preset", "veryfast", "-crf", "24",
+              "-maxrate", "6M", "-bufsize", "12M",
               "-pix_fmt", "yuv420p", "-movflags", "+faststart", "out.mp4");
 
     log("Encoding…");
